@@ -1,0 +1,12 @@
+﻿Maintain the project's structure 100% intact.
+Perform a code refactor, followed by a debugging phase.
+Ensure that the project is fully cohesive, with all communication, connections, and assets properly aligned.
+Conduct a comprehensive suite of tests to verify that the tool is error-proof and ready for deployment in a live environment later this week.
+Ensure that all communication is handled by "Supabase," and prioritize "Supabase" for any data handling involving `localStorage`.
+
+"Our communication regarding requests will be in English/Portuguese.
+However, you should always respond to me in Brazilian Portuguese (pt-BR)."
+
+
+
+npx modern-web-guidance@latest install

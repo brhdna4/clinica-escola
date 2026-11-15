@@ -1,0 +1,15 @@
+# segredos / ambiente
+.env
+*.local
+
+# dependências
+node_modules/
+# build / cache
+.vitest/
+dist/
+
+# backups locais feitos pela refatoração (não versionar)
+_backup_localStorage/
+
+# arquivos compactados de backup
+*.zip

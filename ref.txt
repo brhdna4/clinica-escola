@@ -1,0 +1,967 @@
+PROMPT DE ENGENHARIA V3 — ESTABILIZAÇÃO LÓGICA, INTEGRAÇÃO E CONSISTÊNCIA DE DADOS
+PROJETO: Clínica-Escola de Psicologia — Sistema de Agendamento e Vínculos
+MODO DE EXECUÇÃO: UI-FREEZE / LOGIC-ONLY / REGRESSION-SAFE / ZERO SCOPE CREEP
+
+============================================================
+0. PAPEL DO AGENTE RESPONSÁVEL
+============================================================
+
+Atue como Engenheiro de Software Sênior especialista em:
+- auditoria de código;
+- integração frontend/backend;
+- modelagem de domínio;
+- máquinas de estado;
+- persistência local/API;
+- sincronização de estado;
+- testes de regressão;
+- refatoração segura com preservação total de UI/UX.
+
+Sua missão é analisar, diagnosticar e corrigir apenas a lógica necessária para tornar o sistema funcional, consistente e integrado, sem alterar aparência, layout, design, animações ou componentes visuais.
+
+============================================================
+1. OBJETIVO PRINCIPAL
+============================================================
+
+Garantir que as duas frentes do sistema funcionem de forma integrada, robusta e previsível:
+
+1. [Index] — Portal do Paciente
+   - Página inicial pública/privada.
+   - Fluxos:
+     * “Novo paciente”
+     * “Já sou paciente”
+   - Cadastro passo a passo para novo paciente.
+   - Busca/reconhecimento de paciente existente.
+   - Solicitação de horário disponível.
+   - Dados salvos no navegador, com integração à equipe da clínica.
+   - Preparado conceitualmente para futura sincronização via nuvem, sem implementar nuvem agora.
+
+2. [Panel] — Painel Admin/Recepção/Equipe
+   - Área da equipe.
+   - Login existente.
+   - Acesso demo: Admin / Admin.
+   - Módulos/abas existentes:
+     * Paciente
+     * Aluno
+     * Recepção
+     * Admin
+     * Chat
+   - Agendamento, vínculos, consultórios, recepção.
+   - Controle de fluxo de entrada/saída.
+   - Taxa de utilização, se existente.
+   - Agendas, disponibilidades, salas e status dos atendimentos.
+   - Clique na logo para acessar o painel Admin, se já existir esse comportamento.
+
+A entrega correta é:
+Mais lógica, mais vínculo de dados, mais validação, mais sincronização e mais estabilidade — sem nenhuma mudança visual perceptível.
+
+============================================================
+2. ARTEFATOS DE ENTRADA
+============================================================
+
+Considere os seguintes artefatos como ponto de partida:
+
+- index.html
+  * Portal do paciente.
+  * Botões/links para “Novo paciente” e “Já sou paciente”.
+  * Link para “Área da Equipe”.
+  * Texto informativo sobre sigilo, armazenamento local e futura sincronização via nuvem.
+
+- panel.html
+  * Painel da equipe.
+  * Acesso via login.
+  * Acesso demo: Admin / Admin.
+  * Abas: Paciente, Aluno, Recepção, Admin, Chat.
+  * Contexto de agendamento, vínculos, consultórios e recepção.
+
+- Refatoração.txt
+  * Diretriz original de preservar UI/UX.
+  * Foco em lógica, fluxo, vínculos e integração.
+  * Proibição de escopo extra.
+
+Se o código-fonte completo não estiver disponível, solicite explicitamente:
+- arquivos JS/TS;
+- arquivos de rota;
+- serviços de API;
+- repositórios;
+- stores;
+- hooks;
+- middlewares;
+- schemas;
+- arquivos de persistência;
+- configuração de autenticação, se existir;
+- qualquer arquivo que manipule localStorage, sessionStorage, IndexedDB, banco ou API.
+
+Não invente implementações para arquivos ausentes.
+
+============================================================
+3. PREMISSAS FUNCIONAIS OBSERVADAS
+============================================================
+
+Premissas que devem ser respeitadas:
+
+1. O Index é o ponto de entrada do paciente.
+2. O Panel é o ponto de controle da equipe.
+3. O sistema deve diferenciar paciente novo de paciente antigo.
+4. O paciente antigo deve ser buscado/reconhecido, preferencialmente por nome ou mecanismo já existente.
+5. O sistema deve solicitar horários disponíveis reais.
+6. O Panel deve refletir agendamentos criados no Index.
+7. O Index deve refletir alterações de status feitas no Panel.
+8. Salas, consultórios, alunos, profissionais e disponibilidades devem impedir agendamentos inválidos.
+9. O ciclo de atendimento conhecido é:
+   Solicitado → Confirmado → Em Atendimento → Finalizado → Saiu
+10. O armazenamento atual é local/no navegador, com possibilidade futura de nuvem.
+11. Não implementar Firebase/Supabase agora, salvo se já houver código real para isso.
+12. Não criar autenticação Google/Microsoft agora, salvo se já houver implementação real.
+13. O acesso demo Admin/Admin, se existente, deve continuar funcionando, mas a lógica de permissões deve ser validada.
+
+============================================================
+4. RESTRIÇÃO ABSOLUTA: UI-FREEZE
+============================================================
+
+É PROIBIDO alterar qualquer aspecto visual ou de experiência do usuário.
+
+Proibido:
+- alterar CSS;
+- alterar Tailwind, Bootstrap ou qualquer framework visual;
+- alterar estilos inline de aparência;
+- alterar layout com flex, grid, position, margin, padding, width, height, gap, top, left, right, bottom;
+- alterar cores, fontes, tamanhos de fonte, ícones, imagens, logos, sombras, bordas ou espaçamentos;
+- alterar animações, transições, loaders, skeletons, tooltips, modais, drawers, dropdowns ou efeitos visuais;
+- remover, ocultar, reordenar ou reposicionar componentes existentes;
+- alterar textos visíveis da interface, exceto mensagens de erro/status exibidas em containers já existentes;
+- criar novos botões, cards, banners, toasts, modais, menus, abas, tabelas ou formulários;
+- criar novas páginas, rotas visíveis, telas ou módulos;
+- alterar comportamento de navegação existente;
+- alterar clique na logo, botão “Voltar”, link “Área da Equipe” ou abas existentes;
+- alterar seletores DOM usados para comportamento visual;
+- quebrar estados visuais existentes, como hidden, disabled, active, loading, error, success.
+
+Se uma correção lógica exigir alteração de seletor:
+- atualize todos os usos;
+- preserve comportamento equivalente;
+- não cause regressão visual;
+- documente a mudança.
+
+Se qualquer correção exigir mudança visual, PARE e reporte como risco de escopo.
+
+============================================================
+5. PROTOCOLO DE EXECUÇÃO OBRIGATÓRIO
+============================================================
+
+Siga as fases abaixo em ordem.
+
+FASE 1 — DESCOBERTA
+Antes de alterar código:
+1. Inventariar arquivos e dependências.
+2. Mapear rotas, páginas, componentes e serviços.
+3. Identificar onde Index e Panel leem/escrevem dados.
+4. Identificar storage keys, endpoints, schemas, stores e eventos.
+5. Mapear seletores críticos:
+   - formulários;
+   - botões;
+   - listas;
+   - containers de erro;
+   - loaders/skeletons;
+   - abas;
+   - menus;
+   - elementos de status.
+6. Identificar funções responsáveis por:
+   - login;
+   - cadastro de paciente;
+   - busca de paciente;
+   - criação de agendamento;
+   - consulta de disponibilidade;
+   - atualização de status;
+   - bloqueio de sala;
+   - controle de aluno/profissional;
+   - recepção;
+   - admin;
+   - chat, se existir.
+
+FASE 2 — DIAGNÓSTICO
+Liste problemas reais, por exemplo:
+- Index não salva corretamente.
+- Panel não lê os dados do Index.
+- Agendamento não sincroniza.
+- Status não atualiza.
+- Sala bloqueada ainda permite agendamento.
+- Aluno/profissional indisponível ainda permite agendamento.
+- Paciente antigo não é reconhecido.
+- Paciente novo é duplicado.
+- Há erro silencioso no console.
+- Há transição inválida de status.
+- Há conflito de horário.
+- Há storage corrompido.
+- Há permissões inconsistentes.
+
+FASE 3 — PLANO DE CORREÇÃO
+Antes de implementar:
+1. Descreva o que será alterado.
+2. Justifique cada alteração.
+3. Indique impacto funcional.
+4. Declare explicitamente que não haverá impacto visual.
+5. Liste riscos.
+6. Liste testes que serão executados.
+
+FASE 4 — IMPLEMENTAÇÃO MÍNIMA
+- Corrija apenas o necessário.
+- Não reescreva módulos inteiros sem necessidade.
+- Não troque bibliotecas.
+- Não crie arquitetura nova se a atual puder ser corrigida.
+- Não introduza dependências externas.
+- Não crie UI nova.
+- Mantenha compatibilidade com dados existentes.
+- Mantenha compatibilidade com seletores existentes.
+
+FASE 5 — VALIDAÇÃO
+Execute testes manuais e/ou automatizados existentes.
+Verifique:
+- jornada do paciente novo;
+- jornada do paciente antigo;
+- sincronização Index ↔ Panel;
+- bloqueios de sala/profissional/aluno;
+- ciclo de status;
+- validações;
+- permissões;
+- regressão visual.
+
+FASE 6 — ENTREGA
+Entregue:
+1. diagnóstico;
+2. plano;
+3. alterações realizadas;
+4. testes executados;
+5. declaração de preservação de UI.
+
+============================================================
+6. ARQUITETURA LÓGICA DE REFERÊNCIA
+============================================================
+
+Sem alterar UI, organize ou ajuste a lógica para trabalhar com camadas claras:
+
+1. UI/DOM Adapter
+   - Lê eventos do usuário.
+   - Atualiza apenas elementos existentes.
+   - Não contém regra de negócio complexa.
+
+2. Domain Services
+   - Regras de paciente.
+   - Regras de agendamento.
+   - Regras de disponibilidade.
+   - Regras de status.
+   - Regras de permissão.
+
+3. Repository/Storage Adapter
+   - Acesso padronizado a dados locais ou API.
+   - Serialização/deserialização segura.
+   - Migração defensiva de dados antigos.
+   - Controle de versão de payload, se necessário.
+
+4. State Store/Event Bus
+   - Mantém estado lógico sincronizado.
+   - Emite eventos de domínio.
+   - Permite reação do Panel e do Index sem duplicar estado.
+
+5. Validation Layer
+   - Valida entrada do usuário.
+   - Valida payload antes de persistir.
+   - Valida transições de status.
+   - Valida permissões.
+
+Se o projeto for simples e não tiver todas as camadas, não crie complexidade desnecessária. Apenas introduza a camada mínima que resolver o problema real.
+
+============================================================
+7. CONTRATO DE DADOS MÍNIMO
+============================================================
+
+Use ou normalize dados existentes para que Index e Panel compartilhem o mesmo contrato lógico.
+
+Não crie campos visíveis novos. Campos técnicos podem existir apenas na lógica.
+
+Entidades recomendadas:
+
+Patient
+{
+  id: string;
+  name: string;
+  contact: string | null;
+  createdAt: ISOString;
+  updatedAt: ISOString;
+  version: number;
+  source: "index" | "panel";
+}
+
+StaffUser
+{
+  id: string;
+  name: string;
+  role: "admin" | "reception" | "student" | "professional" | "chat";
+  active: boolean;
+  createdAt: ISOString;
+  updatedAt: ISOString;
+}
+
+Room
+{
+  id: string;
+  name: string;
+  capacity: number | null;
+  active: boolean;
+  blocked: boolean;
+  createdAt: ISOString;
+  updatedAt: ISOString;
+}
+
+AvailabilitySlot
+{
+  id: string;
+  roomId: string | null;
+  staffId: string | null;
+  date: "YYYY-MM-DD";
+  startTime: "HH:mm";
+  endTime: "HH:mm";
+  available: boolean;
+  blockedReason: string | null;
+  updatedAt: ISOString;
+}
+
+Appointment
+{
+  id: string;
+  patientId: string;
+  staffId: string | null;
+  roomId: string | null;
+  date: "YYYY-MM-DD";
+  startTime: "HH:mm";
+  endTime: "HH:mm";
+  status: "requested" | "confirmed" | "in_progress" | "finished" | "checked_out";
+  origin: "index" | "panel";
+  notes: string | null;
+  createdAt: ISOString;
+  updatedAt: ISOString;
+  version: number;
+}
+
+BlockRule
+{
+  id: string;
+  type: "room" | "staff" | "global";
+  targetId: string | null;
+  date: "YYYY-MM-DD" | null;
+  startTime: "HH:mm" | null;
+  endTime: "HH:mm" | null;
+  reason: string | null;
+  active: boolean;
+  createdAt: ISOString;
+}
+
+AuditEvent
+{
+  id: string;
+  type: string;
+  entityId: string;
+  actor: string | null;
+  payload: object;
+  createdAt: ISOString;
+}
+
+Observações:
+- Se campos não existirem no sistema atual, não crie UI para eles.
+- Se campos forem necessários apenas para integridade, podem ser técnicos/invisíveis.
+- Não renomeie campos existentes sem migração segura.
+- Não remova dados existentes sem backup/migração.
+
+============================================================
+8. MÁQUINA DE ESTADOS DO ATENDIMENTO
+============================================================
+
+Status principais:
+- Solicitado
+- Confirmado
+- Em Atendimento
+- Finalizado
+- Saiu
+
+Representação técnica sugerida:
+REQUESTED | CONFIRMED | IN_PROGRESS | FINISHED | CHECKED_OUT
+
+Transições válidas padrão:
+REQUESTED → CONFIRMED
+CONFIRMED → IN_PROGRESS
+IN_PROGRESS → FINISHED
+FINISHED → CHECKED_OUT
+
+Transições inválidas devem ser bloqueadas.
+Exemplos de transições que devem ser negadas, salvo regra especial já existente:
+REQUESTED → IN_PROGRESS
+REQUESTED → FINISHED
+REQUESTED → CHECKED_OUT
+CONFIRMED → FINISHED
+CONFIRMED → CHECKED_OUT
+IN_PROGRESS → REQUESTED
+FINISHED → REQUESTED
+CHECKED_OUT → qualquer status anterior
+
+Regras:
+1. Toda transição deve validar permissão do usuário.
+2. Toda transição deve validar o status atual.
+3. Toda transição deve atualizar updatedAt.
+4. Toda transição deve incrementar version, se existir controle de concorrência.
+5. Toda transição deve propagar evento para Index/Panel.
+6. Se a transição falhar, manter estado anterior.
+7. Se houver status adicionais no código, mapeá-los e validá-los sem criar UI nova.
+
+Eventos de domínio sugeridos:
+- appointment.requested
+- appointment.confirmed
+- appointment.started
+- appointment.finished
+- appointment.checked_out
+- appointment.updated
+- availability.blocked
+- availability.unblocked
+- patient.created
+- patient.matched
+
+Esses eventos são apenas lógicos. Não exigem UI nova.
+
+============================================================
+9. REGRAS DE NEGÓCIO CRÍTICAS
+============================================================
+
+9.1 Disponibilidade
+Ao calcular horários disponíveis, considerar:
+- sala/consultório ativo;
+- sala não bloqueada;
+- profissional/aluno ativo;
+- profissional/aluno disponível;
+- ausência de agendamento conflitante;
+- capacidade/lotação da sala;
+- data/hora futura;
+- duração válida;
+- regras de bloqueio existentes.
+
+9.2 Conflito de horário
+Não permitir dois agendamentos simultâneos quando houver interseção de:
+- mesma sala;
+- mesmo profissional/aluno;
+- mesmo paciente.
+
+Fórmula de conflito temporal:
+startA < endB AND startB < endA
+
+9.3 Paciente novo
+- Validar campos obrigatórios existentes.
+- Evitar duplicidade segundo critérios existentes.
+- Criar paciente antes ou junto com agendamento, de forma atômica.
+- Se falhar, não deixar estado parcial inconsistente.
+
+9.4 Paciente antigo
+- Buscar paciente por mecanismo existente.
+- Não duplicar cadastro.
+- Vincular novo agendamento ao paciente existente.
+- Se busca retornar múltiplos resultados, usar seleção existente.
+- Se não houver mecanismo de desempate, reportar como risco sem criar UI nova.
+
+9.5 Sala/consultório
+- Sala bloqueada impede novos agendamentos.
+- Sala lotada impede novos agendamentos.
+- Sala inativa impede novos agendamentos.
+- Se houver agendamento futuro para sala bloqueada, tratar conflito sem apagar silenciosamente.
+
+9.6 Aluno/profissional
+- Aluno/profissional inativo impede novos agendamentos.
+- Aluno/profissional ausente/bloqueado impede novos agendamentos.
+- Se houver agendamento futuro vinculado a aluno bloqueado, sinalizar inconsistência lógica.
+
+9.7 Recepção/fluxo
+- Recepção deve conseguir operar entrada/saída conforme estados válidos.
+- Taxa de utilização, se existir, deve ser calculada com base em dados consistentes.
+- Não alterar visualmente indicadores existentes.
+
+9.8 Chat, se existir
+- Validar usuário logado.
+- Validar permissão de leitura/escrita.
+- Não permitir mensagens órfãs sem autor.
+- Não criar novo chat se não existir.
+
+============================================================
+10. CONTRATOS DE SERVIÇO
+============================================================
+
+Se houver serviços, ajuste para que exponham operações previsíveis.
+Se não houver, crie apenas serviços internos mínimos, sem impacto visual.
+
+Serviços recomendados:
+
+PatientService
+- createPatient(input)
+- findPatient(query)
+- getPatientById(id)
+
+AvailabilityService
+- getAvailableSlots(filters)
+- isSlotAvailable(slot)
+- checkConflict(appointment)
+
+AppointmentService
+- createAppointmentRequest(input)
+- confirmAppointment(id, actor)
+- startAppointment(id, actor)
+- finishAppointment(id, actor)
+- checkoutAppointment(id, actor)
+- transitionAppointment(id, nextStatus, actor)
+
+RoomService
+- getRooms()
+- blockRoom(id, reason)
+- unblockRoom(id)
+- isRoomAvailable(roomId, date, start, end)
+
+StaffService
+- getStaff()
+- getStudents()
+- blockStaff(id, reason)
+- unblockStaff(id)
+- isStaffAvailable(staffId, date, start, end)
+
+SyncService
+- subscribe(event, handler)
+- emit(event, payload)
+- refreshAll()
+- handleStorageChange(event)
+
+AuthService
+- login(credentials)
+- logout()
+- getCurrentUser()
+- can(action, resource)
+
+Todos os serviços devem retornar resultados estruturados:
+
+Result pattern:
+{
+  ok: true,
+  data: any
+}
+
+ou
+
+{
+  ok: false,
+  error: {
+    code: string,
+    message: string,
+    details?: any
+  }
+}
+
+============================================================
+11. PERSISTÊNCIA E ARMAZENAMENTO
+============================================================
+
+Cenário A — Sistema usa localStorage/sessionStorage:
+- Usar chaves estáveis.
+- Não quebrar dados já salvos.
+- Criar migração defensiva se houver mudança de schema.
+- Validar JSON antes de parsear.
+- Tratar payload corrompido.
+- Evitar sobrescrita concorrente.
+- Escutar evento storage para sincronizar abas, se aplicável.
+- Não salvar segredos sensíveis.
+- Não expor dados desnecessários.
+
+Cenário B — Sistema usa API/backend:
+- Validar respostas.
+- Tratar HTTP errors.
+- Tratar timeout/rede.
+- Atualizar estado após mutações.
+- Não confiar apenas em estado otimista sem rollback.
+- Garantir idempotência quando possível.
+- Garantir autorização no backend.
+
+Cenário C — Sistema híbrido:
+- Definir fonte primária de verdade.
+- Evitar duplicação.
+- Normalizar dados antes de exibir/usar.
+- Registrar origem das mutações.
+
+Regra crítica:
+Index e Panel devem operar sobre a mesma fonte lógica. Se hoje não operam, criar adapter/serviço comum sem alterar UI.
+
+============================================================
+12. SINCRONIZAÇÃO ENTRE INDEX E PANEL
+============================================================
+
+Requisitos:
+1. Agendamento criado no Index aparece no Panel.
+2. Mudança de status no Panel atualiza Index.
+3. Bloqueio de sala no Panel atualiza disponibilidade no Index.
+4. Bloqueio de aluno/profissional no Panel atualiza disponibilidade no Index.
+5. Atualização de disponibilidade reflete imediatamente onde for possível.
+6. Se não houver tempo real, atualizar ao abrir/focar/recarregar usando mecanismo já existente.
+7. Não introduzir polling pesado sem necessidade.
+8. Não criar dependência externa nova.
+
+Mecanismos aceitáveis:
+- storage event entre abas;
+- event bus interno;
+- refresh após mutação;
+- subscription em store existente;
+- refetch após API call;
+- custom events já existentes.
+
+Não criar:
+- WebSocket novo;
+- Firebase Realtime sem necessidade aprovada;
+- Supabase Realtime sem necessidade aprovada;
+- Service Worker novo;
+- Worker novo;
+- canal de notificação novo.
+
+============================================================
+13. SEGURANÇA, PRIVACIDADE E PERMISSÕES
+============================================================
+
+Perfis conhecidos:
+- Paciente
+- Aluno
+- Recepção
+- Admin
+- Chat, se aplicável
+
+Regras:
+1. Paciente acessa apenas seus próprios dados.
+2. Paciente não acessa painel administrativo.
+3. Aluno acessa apenas vínculos/agendas permitidas.
+4. Recepção opera fluxo operacional.
+5. Admin acessa controles administrativos.
+6. Chat respeita usuário logado e permissões.
+7. Toda mutação deve validar permissão.
+8. Toda leitura sensível deve validar escopo.
+9. Não expor dados de outros pacientes.
+10. Não logar dados sensíveis.
+11. Não usar innerHTML inseguro.
+12. Sanitizar entradas quando aplicável.
+13. Manter acesso demo Admin/Admin se já existir, mas garantir que o perfil seja reconhecido corretamente.
+
+LGPD/privacidade:
+- Coletar apenas dados de contato e agendamento, conforme texto existente.
+- Não adicionar coleta desnecessária.
+- Não criar banner visual novo.
+- Não alterar texto de sigilo existente.
+- Não expor histórico além do necessário.
+
+============================================================
+14. VALIDAÇÃO E ERROS
+============================================================
+
+Validar entrada em duas camadas, quando possível:
+1. Frontend/lógica local.
+2. Backend/API, se existir.
+
+Validações mínimas:
+- campos obrigatórios;
+- formato de campos existentes;
+- data válida;
+- hora válida;
+- horário futuro;
+- duração válida;
+- paciente existente, quando necessário;
+- sala existente;
+- staff existente;
+- disponibilidade real;
+- ausência de conflito;
+- permissão do usuário;
+- status atual válido.
+
+Códigos de erro recomendados:
+- VALIDATION_ERROR
+- PATIENT_NOT_FOUND
+- DUPLICATE_PATIENT
+- SLOT_NOT_FOUND
+- SLOT_UNAVAILABLE
+- ROOM_BLOCKED
+- ROOM_FULL
+- STAFF_UNAVAILABLE
+- INVALID_DATE
+- INVALID_TIME
+- INVALID_TRANSITION
+- PERMISSION_DENIED
+- AUTH_REQUIRED
+- STORAGE_ERROR
+- NETWORK_ERROR
+- UNKNOWN_ERROR
+
+Regras de exibição:
+- Usar apenas containers de erro existentes.
+- Não criar toast/modal/alert novo.
+- Não usar alert(), confirm(), prompt() se não fizer parte do padrão atual.
+- Não quebrar layout quando lista estiver vazia.
+- Não quebrar quando elemento DOM estiver ausente.
+- Exibir mensagem amigável ao usuário.
+- Registrar erro técnico apenas sem dados sensíveis.
+
+============================================================
+15. ESTABILIDADE DE DOM E COMPONENTES
+============================================================
+
+Regras:
+1. Antes de manipular elemento, verificar se ele existe.
+2. Não assumir que componente já foi renderizado.
+3. Não remover listeners existentes sem substituição equivalente.
+4. Não alterar ids/classes/data-attributes usados por CSS ou JS.
+5. Não modificar innerHTML de containers existentes sem necessidade absoluta.
+6. Se precisar atualizar lista, reutilizar render existente.
+7. Se precisar desabilitar botão, usar atributo disabled sem alterar estilo.
+8. Se precisar mostrar loading, usar loader/skeleton existente.
+9. Se precisar esconder elemento, usar classe/estado existente.
+10. Não introduzir frameworks de estado novos se o atual funcionar.
+
+============================================================
+16. CASOS DE TESTE OBRIGATÓRIOS
+============================================================
+
+Execute e documente os testes abaixo.
+
+T01 — Novo paciente cria solicitação
+Pré-condição: Index acessível.
+Passos:
+1. Acessar Index.
+2. Clicar em “Novo paciente”.
+3. Preencher dados existentes.
+4. Selecionar horário disponível.
+5. Enviar.
+Resultado esperado:
+- paciente criado;
+- agendamento criado com status inicial;
+- feedback exibido em componente existente;
+- Panel mostra agendamento.
+
+T02 — Paciente antigo é reconhecido
+Pré-condição: paciente já cadastrado.
+Passos:
+1. Acessar Index.
+2. Clicar em “Já sou paciente”.
+3. Buscar paciente.
+4. Selecionar paciente existente.
+Resultado esperado:
+- paciente reconhecido;
+- histórico recuperado, se existente;
+- novo agendamento vinculado corretamente.
+
+T03 — Horário ocupado é bloqueado
+Pré-condição: horário já agendado.
+Passos:
+1. Tentar agendar mesmo horário/sala/profissional.
+Resultado esperado:
+- sistema bloqueia;
+- exibe erro amigável;
+- não cria duplicado.
+
+T04 — Sala bloqueada impede agendamento
+Pré-condição: sala bloqueada no Panel.
+Passos:
+1. Tentar agendar nessa sala no Index.
+Resultado esperado:
+- horário não disponível ou erro seguro.
+
+T05 — Aluno/profissional indisponível impede agendamento
+Pré-condição: aluno/profissional bloqueado/inativo.
+Passos:
+1. Tentar agendar com esse vínculo.
+Resultado esperado:
+- sistema impede.
+
+T06 — Ciclo de status válido
+Pré-condição: agendamento solicitado.
+Passos:
+1. Confirmar.
+2. Iniciar.
+3. Finalizar.
+4. Registrar saída.
+Resultado esperado:
+- cada status atualiza Index e Panel;
+- transições são válidas.
+
+T07 — Transição inválida
+Pré-condição: status atual incompatível.
+Passos:
+1. Tentar avançar para status não permitido.
+Resultado esperado:
+- sistema nega;
+- mantém status anterior;
+- exibe erro se houver container.
+
+T08 — Storage corrompido
+Pré-condição: localStorage com JSON inválido.
+Resultado esperado:
+- app não quebra;
+- recupera estado seguro ou exibe erro amigável.
+
+T09 — Duas abas simultâneas
+Pré-condição: Index e Panel abertos.
+Passos:
+1. Criar agendamento no Index.
+2. Alterar status no Panel.
+Resultado esperado:
+- sincronização consistente sem sobrescrever indevidamente.
+
+T10 — Regressão visual
+Passos:
+1. Comparar Index antes/depois.
+2. Comparar Panel antes/depois.
+Resultado esperado:
+- nenhum layout alterado;
+- nenhuma animação quebrada;
+- nenhum componente removido.
+
+============================================================
+17. CRITÉRIOS DE ACEITE
+============================================================
+
+A tarefa só é concluída quando:
+
+Index:
+- novo paciente cadastra corretamente;
+- paciente antigo é reconhecido;
+- horários disponíveis são reais;
+- erros aparecem em containers existentes;
+- não há componente visual novo;
+- não há quebra de layout.
+
+Panel:
+- login existente funciona;
+- abas existentes funcionam;
+- agendamentos do Index aparecem;
+- alterações de status refletem no Index;
+- bloqueios impedem novos agendamentos;
+- perfil Admin funciona;
+- recepção opera fluxo corretamente;
+- não há quebra visual.
+
+Dados:
+- Index e Panel usam mesma fonte lógica;
+- IDs são estáveis;
+- status são consistentes;
+- vínculos paciente/aluno/sala estão corretos;
+- storage/API não corrompem;
+- não há duplicidade indevida.
+
+Técnico:
+- sem novos erros no console;
+- sem loops de escrita/render;
+- sem dependências novas;
+- sem refatoração especulativa;
+- sem alterações visuais;
+- testes mínimos executados.
+
+============================================================
+18. ENTREGA OBRIGATÓRIA
+============================================================
+
+A resposta final deve conter:
+
+1. Diagnóstico
+   - arquivos analisados;
+   - problemas encontrados;
+   - riscos identificados.
+
+2. Plano
+   - alterações propostas;
+   - justificativa;
+   - impacto esperado;
+   - confirmação de UI-freeze.
+
+3. Implementação
+   - código alterado;
+   - funções ajustadas;
+   - serviços criados/reutilizados;
+   - rotas/API/storage ajustados, se aplicável.
+
+4. Testes
+   - cenários testados;
+   - resultados;
+   - evidências ou instruções de validação.
+
+5. Declaração final
+   Declarar explicitamente:
+   - nenhuma alteração visual foi realizada;
+   - nenhuma animação foi alterada;
+   - nenhum layout foi modificado;
+   - nenhum componente novo foi criado;
+   - nenhuma funcionalidade extra foi adicionada.
+
+============================================================
+19. RISCOS CONHECIDOS E MITIGAÇÕES
+============================================================
+
+Risco 1 — Alterar sem querer CSS/classe visual
+Mitigação: não renomear classes; não alterar estilos; validar seletores.
+
+Risco 2 — Quebrar armazenamento existente
+Mitigação: migração defensiva; backup lógico; parse seguro.
+
+Risco 3 — Divergência entre Index e Panel
+Mitigação: fonte única de verdade; evento de sincronização; refresh pós-mutação.
+
+Risco 4 — Concorrência entre abas
+Mitigação: validação final antes de salvar; version/timestamp; tratamento de conflito.
+
+Risco 5 — Criar UI nova acidentalmente
+Mitigação: usar apenas containers existentes; bloquear criação de novos componentes.
+
+Risco 6 — Inventar módulo futuro como Firebase/Supabase
+Mitigação: não implementar agora; apenas preparar contrato lógico se necessário.
+
+Risco 7 — Quebrar acesso demo Admin/Admin
+Mitigação: preservar fluxo existente; validar perfil após login.
+
+Risco 8 — Exposição indevida de dados
+Mitigação: permissões por perfil; escopo por paciente; logs sem dados sensíveis.
+
+============================================================
+20. PROIBIÇÕES FINAIS
+============================================================
+
+Não:
+- redesenhar telas;
+- melhorar visualmente componentes;
+- alterar espaçamentos;
+- alterar fontes;
+- alterar cores;
+- alterar ícones;
+- alterar imagens;
+- alterar logotipo;
+- alterar menu/abas/header/footer;
+- criar dashboard novo;
+- criar módulo financeiro;
+- criar prontuário novo;
+- criar notificações novas;
+- criar chat novo;
+- criar autenticação social nova;
+- implementar Firebase/Supabase sem código existente;
+- adicionar dependências npm novas;
+- remover funcionalidades existentes;
+- alterar comportamento que já funciona;
+- entregar mudança visual disfarçada de refatoração lógica.
+
+============================================================
+21. INSTRUÇÃO FINAL DE EXECUÇÃO
+============================================================
+
+Analise primeiro.
+Diagnostique depois.
+Planeje antes de implementar.
+Implemente apenas o mínimo necessário.
+Preserve integralmente UI/UX.
+Garanta integração real entre Index e Panel.
+Garanta consistência de dados, vínculos, estados e disponibilidade.
+Teste regressão funcional e visual.
+Declare explicitamente que nenhuma mudança visual foi feita.
+
+Se houver dúvida entre alterar lógica ou alterar UI:
+Escolha sempre a solução que preserve 100% da UI.
+
+Se não houver informação suficiente para executar com segurança:
+Pare, liste os arquivos/dados ausentes e solicite antes de continuar.

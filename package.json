@@ -1,0 +1,17 @@
+{
+  "name": "clinica-escola",
+  "private": true,
+  "description": "Clínica-Escola de Psicologia — agendamento e gestão",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "node --check js/clinica-db.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@supabase/supabase-js": "^2.45.0",
+    "jsdom": "^25.0.0",
+    "vitest": "^3.0.0"
+  }
+}
