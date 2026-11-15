@@ -7,6 +7,8 @@ node_modules/
 # build / cache
 .vitest/
 dist/
+playwright-report/
+test-results/
 
 # backups locais feitos pela refatoração (não versionar)
 _backup_localStorage/
