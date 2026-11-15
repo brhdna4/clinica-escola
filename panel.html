@@ -176,6 +176,9 @@
   @keyframes floatOrb{ 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(50px,-36px) scale(1.14);} }
   header, main, #printArea{ position:relative; z-index:1; }
   #modalRoot, #toastRoot{ position:fixed !important; }
+  /* toasts precisam ficar acima do splash de login (z-index 200) */
+  #toastRoot{ z-index:300 !important; }
+  #modalRoot{ z-index:320 !important; }
   .glass{ transition:box-shadow .3s ease, transform .3s ease; }
   .glass:hover{ box-shadow:0 12px 40px rgba(76,29,149,.18); }
   /* THEME TOGGLE SWITCH */
@@ -256,6 +259,9 @@
   @keyframes btnShine{ 0%{ left:-80%;} 60%,100%{ left:130%;} }
   .login-voltar{ display:inline-flex; align-items:center; gap:.4rem; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.28); color:#fff; border-radius:999px; padding:.45rem .95rem; font-size:.78rem; font-weight:800; cursor:pointer; transition:all .25s ease; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-family:inherit; }
   .login-voltar:hover{ background:rgba(255,255,255,.24); transform:translateX(-3px); box-shadow:0 4px 16px rgba(0,0,0,.25); }
+  .login-reset-link{ display:inline-flex; align-items:center; gap:.35rem; background:none; border:none; color:rgba(255,255,255,.55); font-size:.75rem; font-weight:600; cursor:pointer; padding:.2rem .1rem; transition:color .2s, text-decoration-color .2s; text-decoration:underline; text-decoration-color:transparent; text-underline-offset:3px; font-family:inherit; letter-spacing:.01em; }
+  .login-reset-link:hover{ color:#c4b5fd; text-decoration-color:#c4b5fd; }
+  .login-reset-link:disabled{ opacity:.5; cursor:wait; }
 </style>
 </head>
 <body data-theme="aurora">
@@ -280,7 +286,9 @@
       <p class="sub">Clínica-Escola de Psicologia · Área da Equipe</p>
       <input id="loginUser" class="splash-input" placeholder="Usuário" autocomplete="off">
       <input id="loginPass" class="splash-input" type="password" placeholder="Senha (mín. 8 caracteres)" autocomplete="off">
-      <button id="loginReset" class="btn btn-ghost rounded-lg px-3 py-1.5 text-xs mt-2 w-full" type="button">Esqueci minha senha</button>
+      <div class="flex justify-end -mt-1 mb-3">
+        <button id="loginReset" class="login-reset-link" type="button"><i data-lucide="key-round" class="w-3 h-3"></i> Esqueci minha senha</button>
+      </div>
       <button id="loginBtn" class="splash-btn">Entrar</button>
 
     </div>
@@ -2693,7 +2701,34 @@ async function doLogin(){
 }
 const __logo=$('splashLogo'); if(__logo) __logo.addEventListener('click', ()=>{ __logo.classList.add('hidden'); const __l=$('splashLogin'); if(__l){ __l.classList.remove('hidden'); setTimeout(()=>{ const __u=$('loginUser'); if(__u) __u.focus(); },120); } });
 const __btn=$('loginBtn'); if(__btn) __btn.addEventListener('click', doLogin);
-const __reset=$('loginReset'); if(__reset) __reset.addEventListener('click', async function(){ const u=($('loginUser').value||'').trim(); let email=u; if(email.indexOf('@')<0) email=email+'@clinica-escola.local'; if(!email){ toast('Informe o usuário/e-mail.','warn'); return; } __reset.disabled=true; try{ const r=await ClinicaDB.authResetPassword(email); if(r && r.ok){ toast('E-mail de recuperação enviado. Verifique sua caixa de entrada.','ok'); } else { toast((r&&r.error&&r.error.message)?r.error.message:'Falha ao enviar e-mail.','err'); } }catch(e){ toast('Falha ao enviar e-mail.','err'); } __reset.disabled=false; });
+const __reset=$('loginReset'); if(__reset) __reset.addEventListener('click', async function(){
+  const u=($('loginUser').value||'').trim();
+  if(!u){ toast('Digite seu usuário ou e-mail no campo acima para recuperar a senha.','warn'); const __u=$('loginUser'); if(__u) __u.focus(); return; }
+  if(u.indexOf('@')<0 || /@clinica-escola\.local$/i.test(u)){
+    toast('Contas da equipe sem e-mail válido não recebem link de recuperação. Peça a redefinição ao administrador em Admin → Usuários.','info');
+    return;
+  }
+  const original=__reset.innerHTML;
+  __reset.disabled=true;
+  __reset.innerHTML='<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Enviando...';
+  if(window.lucide) lucide.createIcons();
+  try{
+    const r=await ClinicaDB.authResetPassword(u);
+    if(r && r.ok){
+      toast('Link enviado para '+u+'. Confira sua caixa de entrada e o spam.','ok');
+    } else {
+      const msg=(r&&r.error&&r.error.message)?r.error.message:'';
+      if(/invalid/i.test(msg)) toast('E-mail inválido. Digite um endereço completo, como nome@dominio.com.','err');
+      else if(/rate|limit|too many/i.test(msg)) toast('Muitas tentativas. Aguarde alguns minutos e tente novamente.','warn');
+      else toast(msg||'Não foi possível enviar o e-mail de recuperação agora.','err');
+    }
+  }catch(e){
+    toast('Não foi possível enviar o e-mail de recuperação agora. Tente novamente.','err');
+  }
+  __reset.disabled=false;
+  __reset.innerHTML=original;
+  if(window.lucide) lucide.createIcons();
+});
 const __pw=$('loginPass'); if(__pw) __pw.addEventListener('keydown', e=>{ if(e.key==='Enter'){ if(e.isComposing || e.keyCode===229) return; doLogin(); } });
 const __lv=$('loginVoltar'); if(__lv) __lv.addEventListener('click', ()=>{ const __sl=$('splashLogin'); if(__sl) __sl.classList.add('hidden'); const __lg=$('splashLogo'); if(__lg){ __lg.classList.remove('hidden'); __lg.style.animation='none'; void __lg.offsetWidth; __lg.style.animation=''; } });
 
